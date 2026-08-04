@@ -1,0 +1,43 @@
+<script>
+(function () {
+  if (window.__upsellBundleListenerAttached) return;
+  window.__upsellBundleListenerAttached = true;
+  document.addEventListener('click', function (e) {
+    // El botón es un <div role="button"> dentro de .lb-bundle-cta-button
+    var cta = e.target.closest('.lb-bundle-cta-button');
+    if (!cta) return;
+    var widget = cta.closest('lb-upsell-widget');
+    if (!widget) return;
+    // Cards tildadas al momento del click
+    var selected = Array.prototype.slice.call(
+      widget.querySelectorAll('lb-upsell-flat-card[lb-selected]')
+    );
+    var items = selected.map(function (card) {
+      var select = card.querySelector('.lb-variant-picker');
+      var priceEl = card.querySelector('.lb-price-sale-price');
+      var titleEl = card.querySelector('.lb-card-title');
+      return {
+        id: select ? select.value : card.getAttribute('lb-variant-id'), // variante actual del select
+        product_id: card.getAttribute('lb-product-id'),
+        name: titleEl ? titleEl.textContent.trim() : null,
+        price: priceEl ? parseInt(priceEl.getAttribute('lb-default-price'), 10) / 100 : null,
+        quantity: 1,
+        is_trigger: card.hasAttribute('trigger-card') // producto principal de la PDP
+      };
+    });
+    var upsellItems = items.filter(function (i) { return !i.is_trigger; });
+    var totalValue = items.reduce(function (sum, i) { return sum + (i.price || 0); }, 0);
+    // Publica hacia el custom pixel (que ahora tiene GTM adentro)
+    if (window.Shopify && window.Shopify.analytics && window.Shopify.analytics.publish) {
+      window.Shopify.analytics.publish('upsell_add_to_cart', {
+        selected_count: items.length,      // total tildados (incluye el principal)
+        upsell_count: upsellItems.length,  // solo los extras del upsell ← la métrica que importa
+        widget: 'comprados_juntos_habitualmente',
+        value: Math.round(totalValue * 100) / 100,
+        currency: (window.Shopify.currency && window.Shopify.currency.active) || 'EUR',
+        items: items
+      });
+    }
+  });
+})();
+</script>
