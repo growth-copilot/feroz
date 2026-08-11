@@ -20,8 +20,8 @@
     var io = new IntersectionObserver(function (entries) {
       entries.forEach(function (entry) {
         if (fired || !entry.isIntersecting) return;
-        var ratioElement  = entry.intersectionRatio;                          // % del bloque visible
-        var ratioViewport = entry.intersectionRect.height / window.innerHeight; // % del viewport que ocupa
+        var ratioElement = entry.intersectionRatio;
+        var ratioViewport = entry.intersectionRect.height / window.innerHeight;
         if (ratioElement >= 0.5 || ratioViewport >= 0.5) {
           fired = true;
           publishReviewsView(el);
@@ -34,16 +34,14 @@
 
   function start() {
     var el = findReviews();
-    if (el) { observeVisibility(el); return; } // ya está en el DOM: no esperamos nada
+    if (el) { observeVisibility(el); return; }
 
-    // Stamped.io inyecta las reviews después: reaccionamos al cambio, sin consultar en loop
     var mo = new MutationObserver(function () {
       var found = findReviews();
       if (found) { mo.disconnect(); observeVisibility(found); }
     });
     mo.observe(document.body, { childList: true, subtree: true });
 
-    // Corte de seguridad: si el widget nunca aparece, dejamos de observar el DOM
     setTimeout(function () { mo.disconnect(); }, 20000);
   }
 
